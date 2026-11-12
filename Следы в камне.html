@@ -1,0 +1,700 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Следы в камне</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: лабораторный лоток с образцом слева, признаки и таймер справа, ответы команд ниже, разбор раскрывается вместо ответов. */
+:root{
+  --bg:#edf0ed; --surface:#fafbfa; --surface-2:#e1e7e3; --fg:#15201d; --muted:#4f605a; --line:#c6d0cb;
+  --accent:#24695b; --accent-fg:#ffffff;
+  --a:#8a5410; --b:#2d5293; --on-team:#ffffff;
+  --good:#23704a; --bad:#a63a2a;
+  --plate:#1b2321; --plate-fg:#e9f0ed; --plate-line:#34413d;
+  --f-display:"Unbounded","IBM Plex Sans",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1514; --surface:#172120; --surface-2:#212d2b; --fg:#e6eeeb; --muted:#9db0aa; --line:#2b3a37;
+    --accent:#5fb7a4; --accent-fg:#0b1311;
+    --a:#e2a24c; --b:#85a9e8; --on-team:#101514;
+    --good:#5cc78a; --bad:#f08572;
+    --plate:#0b100f; --plate-fg:#e9f0ed; --plate-line:#2a3633;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#172120; --surface-2:#212d2b; --fg:#e6eeeb; --muted:#9db0aa; --line:#2b3a37;
+  --accent:#5fb7a4; --accent-fg:#0b1311;
+  --a:#e2a24c; --b:#85a9e8; --on-team:#101514;
+  --good:#5cc78a; --bad:#f08572;
+  --plate:#0b100f; --plate-fg:#e9f0ed; --plate-line:#2a3633;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 16px/1.55 var(--f-body)}
+h1,h2,h3,p{margin:0}
+h1,h2{font-family:var(--f-display);font-weight:700;line-height:1.14;text-wrap:balance}
+h3{font:600 13px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.wrap{max-width:1140px;margin:0 auto;padding-block:18px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.kicker{font:500 12px/1.3 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* top bar */
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand b{font:700 15px/1.2 var(--f-display);letter-spacing:.02em}
+.scores{display:flex;gap:10px;flex-wrap:wrap}
+.score{display:flex;align-items:baseline;gap:10px;padding:6px 12px;border-left:4px solid var(--tc);background:var(--surface);min-width:0}
+.score .sn{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.score b{font:500 24px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.pips{display:flex;gap:5px}
+.pips i{width:22px;height:6px;background:var(--surface-2)}
+.pips i.done{background:var(--accent)}
+.pips i.now{background:var(--fg)}
+
+/* buttons */
+.btn{appearance:none;border:0;background:var(--accent);color:var(--accent-fg);font:600 16px/1 var(--f-body);padding:14px 22px;border-radius:6px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+.btn.small{font-size:14px;padding:10px 14px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* intro */
+.intro{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:36px 56px;padding-top:34px}
+.intro h1{font-size:clamp(26px,4vw,42px)}
+.lede{margin-top:16px;max-width:60ch;font-size:18px}
+.setup{margin-top:26px;display:grid;gap:14px;max-width:520px}
+.setup label{display:grid;gap:6px;font:500 12px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.setup input,.setup select{font:400 16px/1.2 var(--f-body);color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:6px;padding:11px 12px;width:100%}
+.setup .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rules{margin:26px 0 0;padding:0;list-style:none;display:grid;gap:8px;max-width:60ch;color:var(--muted);font-size:15px}
+.rules b{color:var(--fg)}
+.types{display:grid;gap:0;align-content:start}
+.types .t{padding:14px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:4px 18px}
+.types .t:last-child{border-bottom:1px solid var(--line)}
+.types .t b{font-weight:600}
+.types .t span{color:var(--muted);font-size:15px}
+
+/* round */
+.stage{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:26px 36px;padding-top:22px;align-items:start}
+.plate{position:relative;aspect-ratio:4/3;max-width:100%;background:var(--plate);border:1px solid var(--plate-line);overflow:hidden}
+.plate svg,.plate img{position:absolute;inset:0;width:100%;height:100%}
+.plate img{object-fit:contain}
+.plate .tag{position:absolute;left:12px;top:10px;font:500 12px/1 var(--f-mono);letter-spacing:.1em;color:var(--plate-fg);background:rgba(0,0,0,.45);padding:6px 8px}
+.plate .cap{position:absolute;right:12px;bottom:10px;font:400 11px/1 var(--f-mono);letter-spacing:.06em;color:var(--plate-fg);opacity:.75;background:rgba(0,0,0,.4);padding:5px 7px}
+.panel{display:grid;gap:14px;min-width:0}
+.ask{font:700 clamp(18px,2.2vw,24px)/1.25 var(--f-display);text-wrap:balance}
+.timer{display:flex;align-items:center;gap:14px}
+.tbar{position:relative;flex:1;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.tbar i{position:absolute;inset:0 auto 0 0;width:100%;background:var(--accent)}
+.tbar .tick{position:absolute;top:0;bottom:0;width:3px;background:var(--bg)}
+#tnum{font:500 34px/1 var(--f-mono);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.worth{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.worth b{font:500 15px/1 var(--f-mono);color:var(--accent-fg);background:var(--accent);padding:5px 9px;border-radius:4px}
+.clues{display:grid}
+.clue{display:grid;grid-template-columns:92px minmax(0,1fr);gap:4px 14px;padding:12px 0;border-top:1px solid var(--line)}
+.clue:last-child{border-bottom:1px solid var(--line)}
+.clue .lab{font:500 12px/1.5 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.clue.off .txt{color:var(--muted);opacity:.7}
+.clue.new .txt{animation:rise .35s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 28px;padding-top:26px}
+.team{border-top:4px solid var(--tc);padding-top:12px;display:grid;gap:12px;min-width:0}
+.team header{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.team header b{font:700 16px/1.2 var(--f-display);overflow-wrap:anywhere}
+.team header span{font:400 12px/1.3 var(--f-mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:8px}
+.ans{appearance:none;text-align:left;background:var(--surface);color:var(--fg);border:1.5px solid var(--tc);border-radius:6px;padding:12px 12px 12px 12px;font:500 15px/1.25 var(--f-body);cursor:pointer;display:flex;gap:10px;align-items:flex-start;min-height:56px}
+.ans:hover{background:var(--surface-2)}
+.ans .k{font:500 11px/1.6 var(--f-mono);color:var(--muted);border:1px solid var(--line);padding:0 5px;border-radius:3px;flex:none}
+.locked-msg{display:flex;align-items:center;min-height:56px;padding:0 14px;background:var(--tc);color:var(--on-team);font:500 14px/1.3 var(--f-mono);letter-spacing:.04em;border-radius:6px}
+
+/* reveal */
+.reveal{margin-top:26px;border-top:1px solid var(--line);padding-top:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:24px 40px}
+.rv-main{display:grid;gap:12px;align-content:start}
+.rv-main h2{font-size:clamp(22px,3vw,34px)}
+.rv-teams{display:grid;gap:8px;margin-top:6px}
+.rv-t{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 12px;border-left:4px solid var(--tc);background:var(--surface)}
+.rv-t .who{font-weight:600;overflow-wrap:anywhere}
+.rv-t .pick{grid-column:1;color:var(--muted);font-size:14px}
+.rv-t .res{grid-column:2;grid-row:1 / span 2;align-self:center;font:500 18px/1 var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.rv-t .res.ok{color:var(--good)}
+.rv-t .res.no{color:var(--bad)}
+.rv-body{display:grid;gap:18px;align-content:start}
+.rv-body p,.rv-body li{max-width:68ch}
+.rv-body ul{margin:8px 0 0;padding-left:18px;display:grid;gap:6px}
+.rv-body h3{margin-bottom:6px}
+.rv-actions{grid-column:1 / -1;display:flex;justify-content:flex-end}
+
+/* final */
+.final{padding-top:30px;display:grid;gap:30px}
+.final h1{font-size:clamp(24px,3.6vw,38px)}
+.bars{display:grid;gap:12px;max-width:640px}
+.bar-row{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) 44px;gap:12px;align-items:center}
+.bar-row .n{font-weight:600;overflow-wrap:anywhere}
+.bar-row .track{height:18px;background:var(--surface-2)}
+.bar-row .track i{display:block;height:100%;background:var(--tc)}
+.bar-row .v{font:500 20px/1 var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.scroll-x{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th{font:500 11px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-family:var(--f-mono);color:var(--muted)}
+td .p{font-family:var(--f-mono)}
+td .ok{color:var(--good)} td .no{color:var(--bad)}
+.key{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 40px}
+.key ol,.key ul{margin:0;padding:0;list-style:none}
+.key li{padding:12px 0;border-top:1px solid var(--line);display:grid;gap:3px}
+.key li ul{margin-top:8px;padding-left:16px;border-left:2px solid var(--line)}
+.key li ul li{border-top:0;padding:6px 0}
+.key .q{color:var(--muted);font-size:14px}
+.key b{font-weight:600}
+.final-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+/* teacher */
+details.teacher{margin-top:44px;border-top:1.5px solid var(--line);padding-top:6px}
+details.teacher summary{cursor:pointer;font:600 15px/1.3 var(--f-body);padding:14px 0;list-style:none;display:flex;gap:10px;align-items:center}
+details.teacher summary::before{content:"+";font:500 18px/1 var(--f-mono);width:22px;color:var(--accent)}
+details.teacher[open] summary::before{content:"–"}
+.tcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 44px;padding-bottom:14px}
+.tcols section{display:grid;gap:8px;align-content:start}
+.tcols p,.tcols li{max-width:64ch;font-size:15px}
+.tcols ul,.tcols ol{margin:0;padding-left:20px;display:grid;gap:6px}
+.tcols .wide{grid-column:1 / -1}
+.photos{display:grid;gap:0}
+.ph{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;padding:12px 0;border-top:1px solid var(--line);align-items:center}
+.ph code{font:400 13px/1.4 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.ph .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ph img{width:56px;height:42px;object-fit:cover;border:1px solid var(--line)}
+.ph input[type=file]{display:none}
+
+@media (max-width:860px){
+  .intro,.stage,.reveal,.key,.tcols{grid-template-columns:minmax(0,1fr)}
+  .teams{grid-template-columns:minmax(0,1fr)}
+  .types .t{grid-template-columns:minmax(0,1fr)}
+  .bar-row{grid-template-columns:minmax(0,110px) minmax(0,1fr) 36px}
+  .clue{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.clue.new .txt{animation:none}}
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">
+      <b>СЛЕДЫ В КАМНЕ</b>
+      <span class="kicker">палеоботаника · игра на 5 минут</span>
+    </div>
+    <div class="pips" id="pips" aria-hidden="true"></div>
+    <div class="scores">
+      <div class="score" style="--tc:var(--a)"><span class="sn" id="sn0"></span><b id="sv0">0</b></div>
+      <div class="score" style="--tc:var(--b)"><span class="sn" id="sn1"></span><b id="sv1">0</b></div>
+    </div>
+  </header>
+
+  <!-- INTRO -->
+  <section id="s-intro" class="intro">
+    <div>
+      <p class="kicker">Строение и фоссилизация растительных остатков</p>
+      <h1 style="margin-top:10px">Как растение стало камнем? Определите по образцу</h1>
+      <p class="lede">Шесть образцов, пять типов сохранности. Каждые несколько секунд открывается новый признак, а верный ответ приносит меньше очков.</p>
+      <form class="setup" id="setup" autocomplete="off">
+        <div class="row">
+          <label for="in-a">Команда 1<input id="in-a" type="text" maxlength="24" value="Грибы-деструкторы"></label>
+          <label for="in-b">Команда 2<input id="in-b" type="text" maxlength="24" value="Торфяники"></label>
+        </div>
+        <label for="in-pace">Время на образец
+          <select id="in-pace">
+            <option value="20">Быстро: 20 секунд</option>
+            <option value="25" selected>Для 5 минут: 25 секунд</option>
+            <option value="40">Спокойно: 40 секунд</option>
+          </select>
+        </label>
+        <div><button class="btn" type="submit" id="btn-start">Начать игру</button></div>
+      </form>
+      <ul class="rules">
+        <li><b>Признаки открываются по очереди.</b> Ответ после первого признака даёт 3 очка, после второго 2, после третьего 1.</li>
+        <li><b>Ошибка стоит минус 1.</b> Ответ принимается сразу и не меняется.</li>
+        <li><b>Ответы.</b> Команда 1 нажимает 1–5, команда 2 нажимает Q W E R T. Ведущий может кликать мышью.</li>
+      </ul>
+    </div>
+    <div class="types" id="types" aria-label="Пять типов сохранности"></div>
+  </section>
+
+  <!-- ROUND -->
+  <section id="s-round" hidden>
+    <div class="stage">
+      <div class="plate" id="plate"></div>
+      <div class="panel">
+        <p class="ask">Какой тип сохранности у этого образца?</p>
+        <div class="timer">
+          <div class="tbar"><i id="tbar"></i><span class="tick" style="left:33.3%"></span><span class="tick" style="left:66.6%"></span></div>
+          <b id="tnum">25</b>
+        </div>
+        <div class="worth"><span>Верный ответ сейчас даёт</span><b id="worth">+3</b></div>
+        <div class="clues" id="clues"></div>
+      </div>
+    </div>
+
+    <div class="teams" id="teams">
+      <div class="team" style="--tc:var(--a)">
+        <header><b id="tn0"></b><span id="ts0">думает</span></header>
+        <div id="ans0"></div>
+      </div>
+      <div class="team" style="--tc:var(--b)">
+        <header><b id="tn1"></b><span id="ts1">думает</span></header>
+        <div id="ans1"></div>
+      </div>
+    </div>
+
+    <div class="reveal" id="reveal" hidden>
+      <div class="rv-main">
+        <p class="kicker">Верный ответ</p>
+        <h2 id="rv-type"></h2>
+        <p class="muted" id="rv-title"></p>
+        <div class="rv-teams" id="rv-teams"></div>
+      </div>
+      <div class="rv-body">
+        <div><h3>Что произошло</h3><p id="rv-explain"></p></div>
+        <div><h3>Чем не другие типы</h3><ul id="rv-not"></ul></div>
+        <div><h3>Ещё факт</h3><p id="rv-fact"></p></div>
+      </div>
+      <div class="rv-actions"><button class="btn" id="btn-next" type="button">Следующий образец</button></div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="s-final" class="final" hidden>
+    <div>
+      <p class="kicker">Итоги</p>
+      <h1 id="f-title" style="margin-top:8px"></h1>
+    </div>
+    <div class="bars" id="f-bars"></div>
+    <div>
+      <h3 style="margin-bottom:10px">Разбор по образцам</h3>
+      <div class="scroll-x"><table id="f-table"></table></div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:6px">Определительный ключ: что сохранилось?</h3>
+      <div class="key">
+        <ol>
+          <li><b>Самой ткани нет, осталась только форма</b>
+            <ul>
+              <li><span class="q">Образец объёмный, повторяет полость →</span> <b>Слепок (ядро)</b></li>
+              <li><span class="q">Образец плоский, виден рельеф жилок →</span> <b>Отпечаток</b></li>
+            </ul>
+          </li>
+          <li><span class="q">Остался тонкий слой чёрного углерода на породе →</span> <b>Компрессия (углефикация)</b></li>
+        </ol>
+        <ol>
+          <li><span class="q">Клетки заполнены минералом, видны кольца или анатомия →</span> <b>Перминерализация</b> <span class="q">(кремнезём, кальцит, пирит)</span></li>
+          <li><span class="q">Растение запечатано в прозрачной застывшей смоле →</span> <b>Инклюзия в янтаре</b></li>
+          <li><span class="q">Общее для всех пяти типов: растение быстро изолировали от кислорода и микробов.</span></li>
+        </ol>
+      </div>
+    </div>
+    <div class="final-actions">
+      <button class="btn" id="btn-again" type="button">Сыграть ещё раз</button>
+      <button class="btn ghost" id="btn-home" type="button">К началу</button>
+    </div>
+  </section>
+
+  <!-- TEACHER -->
+  <details class="teacher" id="teacher">
+    <summary>Для преподавателя: цели, сценарий, проверка, фото</summary>
+    <div class="tcols">
+      <section>
+        <h3>Цели обучения</h3>
+        <ol>
+          <li>Различать пять типов сохранности растительных остатков по внешним признакам.</li>
+          <li>Связывать тип сохранности с условиями захоронения: скорость, кислород, состав растворов.</li>
+          <li>Объяснять, почему в камне чаще остаются кутикула, пыльца и древесина, а не мягкие ткани.</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Сценарий на 5 минут</h3>
+        <ul>
+          <li><b>0:00–0:30</b> команды, правила, пять типов на экране.</li>
+          <li><b>0:30–4:30</b> шесть образцов: около 25 секунд на ответ и 15 секунд на разбор.</li>
+          <li><b>4:30–5:00</b> итоги, определительный ключ, один вопрос для обсуждения.</li>
+        </ul>
+        <p class="muted">Образец 6 с подвохом: перминерализация бывает не только кремнезёмной, но и карбонатной.</p>
+      </section>
+      <section>
+        <h3>Вопросы для обсуждения</h3>
+        <ol>
+          <li>В образцах 4 и 6 минералы разные, а тип один. Что их объединяет?</li>
+          <li>Какое условие нужно для любого из пяти типов? <span class="muted">(Быстрое захоронение без доступа кислорода.)</span></li>
+          <li>Какой тип лучше сохраняет клеточное строение, а какой внутреннюю полость стебля?</li>
+        </ol>
+      </section>
+      <section>
+        <h3>Быстрая проверка после игры</h3>
+        <ol>
+          <li>Чем компрессия отличается от отпечатка? <span class="muted">(У компрессии остаётся плёнка углерода, у отпечатка только рельеф.)</span></li>
+          <li>Что именно сохраняет слепок? <span class="muted">(Форму заполненной полости, анатомии ткани нет.)</span></li>
+          <li>Какое условие нужно для янтаря? <span class="muted">(Смола запечатывает остаток от воздуха и микробов.)</span></li>
+        </ol>
+        <p class="muted">Оценивание: 14–18 очков уверенное владение, 8–13 хорошее, ниже 8 стоит разобрать ключ ещё раз. Максимум за игру 18 очков на команду.</p>
+      </section>
+      <section class="wide">
+        <h3>Фото образцов (по желанию)</h3>
+        <p class="muted">В игре стоят схематичные рисунки. Загрузите реальное фото на любой раунд, и оно заменит рисунок. Файлы остаются в этой вкладке и не сохраняются. Запросы подобраны для поиска изображений.</p>
+        <div class="photos" id="photos"></div>
+      </section>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+'use strict';
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+var $=function(s){return document.querySelector(s);};
+
+/* ---------- specimen drawings ---------- */
+function rng(seed){var s=seed;return function(){s=(s*16807)%2147483647;return (s-1)/2147483646;};}
+var SV='<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" role="img" aria-label="';
+
+function svgComp(){
+  var s=SV+'Схема образца: тёмная плёнка листа на сером сланце">';
+  s+='<defs><linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9ba29e"/><stop offset="1" stop-color="#6c7470"/></linearGradient></defs>';
+  s+='<rect width="400" height="300" fill="url(#gc)"/>';
+  for(var y=26;y<300;y+=32){s+='<path d="M0 '+y+' Q200 '+(y+7)+' 400 '+(y-5)+'" stroke="#586160" stroke-width="1" fill="none" opacity=".4"/>';}
+  var P0=[70,262],P1=[120,70],P2=[335,72];
+  function bz(t){return [Math.pow(1-t,2)*P0[0]+2*(1-t)*t*P1[0]+t*t*P2[0],Math.pow(1-t,2)*P0[1]+2*(1-t)*t*P1[1]+t*t*P2[1]];}
+  function ang(t){return Math.atan2(2*(1-t)*(P1[1]-P0[1])+2*t*(P2[1]-P1[1]),2*(1-t)*(P1[0]-P0[0])+2*t*(P2[0]-P1[0]));}
+  s+='<path d="M'+P0[0]+','+P0[1]+' Q'+P1[0]+','+P1[1]+' '+P2[0]+','+P2[1]+'" stroke="#141716" stroke-width="4" fill="none"/>';
+  for(var t=0.08;t<=0.97;t+=0.055){
+    var p=bz(t),a=ang(t),len=58*(1-0.62*t)+8;
+    [-1,1].forEach(function(side){
+      var an=a+side*1.12,cx=p[0]+Math.cos(an)*len/2,cy=p[1]+Math.sin(an)*len/2;
+      s+='<ellipse cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" rx="'+(len/2).toFixed(1)+'" ry="6.4" transform="rotate('+(an*180/Math.PI).toFixed(1)+' '+cx.toFixed(1)+' '+cy.toFixed(1)+')" fill="#161918" opacity=".94"/>';
+    });
+  }
+  s+='<ellipse cx="338" cy="68" rx="14" ry="5.5" transform="rotate(-8 338 68)" fill="#161918"/>';
+  s+='</svg>';return s;
+}
+
+function svgImp(){
+  var s=SV+'Схема образца: рельеф листа на светлой породе без тёмной плёнки">';
+  s+='<defs><linearGradient id="gi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9d4c7"/><stop offset="1" stop-color="#bbb6a8"/></linearGradient></defs>';
+  s+='<rect width="400" height="300" fill="url(#gi)"/>';
+  var r=rng(11);
+  for(var i=0;i<70;i++){s+='<circle cx="'+(r()*400).toFixed(0)+'" cy="'+(r()*300).toFixed(0)+'" r="'+(0.6+r()*1.4).toFixed(1)+'" fill="#a8a294" opacity=".35"/>';}
+  function w(x){var u=(x-92)/240;if(u<0||u>1)return 0;return 82*Math.pow(Math.sin(Math.PI*Math.pow(u,0.85)),0.8);}
+  var top=[],bot=[];
+  for(var x=92;x<=332;x+=6){top.push(x+','+(150-w(x)).toFixed(1));bot.unshift(x+','+(150+w(x)).toFixed(1));}
+  var outline='M'+top.join(' L')+' L'+bot.join(' L')+' Z';
+  s+='<path d="'+outline+'" fill="#c6c1b3" stroke="#a39d8e" stroke-width="2"/>';
+  s+='<path d="'+outline+'" fill="none" stroke="#efeadd" stroke-width="1.2" transform="translate(1.4 1.4)" opacity=".8"/>';
+  var veins='';
+  for(var vx=118;vx<=300;vx+=20){
+    var ex=vx+30,wy=w(ex)*0.9;
+    veins+='M'+vx+' 150 Q'+(vx+14)+' '+(150-wy*0.55).toFixed(1)+' '+ex+' '+(150-wy).toFixed(1)+' M'+vx+' 150 Q'+(vx+14)+' '+(150+wy*0.55).toFixed(1)+' '+ex+' '+(150+wy).toFixed(1)+' ';
+  }
+  veins+='M62 150 L330 150';
+  s+='<path d="'+veins+'" fill="none" stroke="#a39d8e" stroke-width="1.5"/>';
+  s+='<path d="'+veins+'" fill="none" stroke="#ece7da" stroke-width="1" transform="translate(1.2 1.2)" opacity=".85"/>';
+  s+='</svg>';return s;
+}
+
+function svgCast(){
+  var s=SV+'Схема образца: объёмный каменный цилиндр с продольными рёбрами и узлами">';
+  s+='<defs><linearGradient id="gk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a5044"/><stop offset=".38" stop-color="#bba98f"/><stop offset=".7" stop-color="#8d7d68"/><stop offset="1" stop-color="#43392f"/></linearGradient></defs>';
+  s+='<ellipse cx="200" cy="262" rx="150" ry="14" fill="#000" opacity=".35"/>';
+  s+='<g transform="rotate(-9 200 150)">';
+  s+='<rect x="42" y="88" width="316" height="124" rx="42" fill="url(#gk)"/>';
+  for(var k=1;k<=9;k++){var y=88+k*12.4;s+='<path d="M52 '+y.toFixed(1)+' Q200 '+(y+(k-5)*1.8).toFixed(1)+' 348 '+y.toFixed(1)+'" stroke="#3b3329" stroke-width="2" fill="none" opacity=".55"/>';}
+  [138,266].forEach(function(x){s+='<path d="M'+x+' 90 Q'+(x-9)+' 150 '+x+' 210" stroke="#2c251d" stroke-width="4" fill="none" opacity=".75"/><path d="M'+(x+5)+' 90 Q'+(x-4)+' 150 '+(x+5)+' 210" stroke="#d7c6aa" stroke-width="1.5" fill="none" opacity=".45"/>';});
+  var r=rng(5);
+  for(var i=0;i<90;i++){s+='<circle cx="'+(60+r()*280).toFixed(0)+'" cy="'+(94+r()*112).toFixed(0)+'" r="'+(0.5+r()*1.3).toFixed(1)+'" fill="#2c251d" opacity=".35"/>';}
+  s+='</g></svg>';return s;
+}
+
+function svgPerm(){
+  var s=SV+'Схема образца: спил окаменелого дерева с годичными кольцами">';
+  s+='<defs><radialGradient id="gp" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#ecd7ad"/><stop offset="1" stop-color="#b98957"/></radialGradient></defs>';
+  s+='<ellipse cx="200" cy="268" rx="118" ry="9" fill="#000" opacity=".35"/>';
+  s+='<circle cx="200" cy="150" r="112" fill="url(#gp)"/>';
+  var pal=['#8c3b1f','#c4713a','#e8c985','#f6ead0','#a2552b','#6b2c18','#d99a58'];
+  var idx=0;
+  for(var r=104;r>6;r-=6.5){s+='<circle cx="200" cy="150" r="'+r+'" fill="none" stroke="'+pal[idx%pal.length]+'" stroke-width="'+(2.5+(idx%3)*1.2)+'" opacity=".9"/>';idx++;}
+  for(var a=0;a<28;a++){var an=a*Math.PI*2/28;s+='<line x1="200" y1="150" x2="'+(200+Math.cos(an)*104).toFixed(1)+'" y2="'+(150+Math.sin(an)*104).toFixed(1)+'" stroke="#fff" stroke-width=".8" opacity=".14"/>';}
+  s+='<circle cx="200" cy="150" r="111" fill="none" stroke="#2e2420" stroke-width="7"/>';
+  s+='<path d="M200 150 L238 96 L246 72 L270 50" stroke="#f7f4ec" stroke-width="3.2" fill="none" opacity=".92"/>';
+  s+='<path d="M200 150 L150 188 L142 214 L118 236" stroke="#f7f4ec" stroke-width="3" fill="none" opacity=".9"/>';
+  s+='<path d="M120 78 A104 104 0 0 1 196 44" stroke="#fff" stroke-width="5" fill="none" opacity=".28" stroke-linecap="round"/>';
+  s+='</svg>';return s;
+}
+
+function svgAmb(){
+  var s=SV+'Схема образца: кусок янтаря с листом внутри">';
+  s+='<defs><radialGradient id="ga" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="#ffd978"/><stop offset=".6" stop-color="#e29a22"/><stop offset="1" stop-color="#a45a0b"/></radialGradient></defs>';
+  s+='<ellipse cx="200" cy="270" rx="120" ry="9" fill="#000" opacity=".35"/>';
+  s+='<path d="M120 62 C172 24 292 34 324 98 C354 160 304 252 222 264 C140 275 66 224 66 162 C66 120 88 86 120 62 Z" fill="url(#ga)"/>';
+  s+='<g transform="rotate(-24 205 152)"><path d="M110 152 C150 112 250 112 300 152 C250 192 150 192 110 152 Z" fill="#4a3614" opacity=".88" stroke="#2f220c" stroke-width="1.5"/>';
+  var v='M102 152 L304 152 ';
+  for(var x=134;x<=270;x+=20){v+='M'+x+' 152 L'+(x+16)+' 128 M'+x+' 152 L'+(x+16)+' 176 ';}
+  s+='<path d="'+v+'" stroke="#c9a257" stroke-width="1.2" fill="none" opacity=".75"/></g>';
+  var r=rng(9);
+  [[250,92,5],[278,116,3],[116,196,4],[226,222,6],[152,100,3]].forEach(function(b){s+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+b[2]+'" fill="none" stroke="#fff2c2" stroke-width="1.4" opacity=".7"/>';});
+  s+='<path d="M104 96 C128 62 176 48 214 50" stroke="#fff" stroke-width="7" fill="none" opacity=".35" stroke-linecap="round"/>';
+  s+='</svg>';return s;
+}
+
+function svgCoal(){
+  var s=SV+'Схема образца: угольный шар со срезом стебля, видны клетки">';
+  s+='<defs><pattern id="cells" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="4.3" fill="none" stroke="#453e33" stroke-width="1.3"/></pattern><clipPath id="cf"><ellipse cx="206" cy="146" rx="112" ry="92"/></clipPath></defs>';
+  s+='<ellipse cx="200" cy="268" rx="140" ry="10" fill="#000" opacity=".35"/>';
+  s+='<path d="M48 150 C44 84 112 38 200 38 C292 38 356 86 352 154 C348 222 286 262 200 262 C112 262 52 220 48 150 Z" fill="#46423c"/>';
+  s+='<ellipse cx="206" cy="146" rx="112" ry="92" fill="#8e8574"/>';
+  s+='<g clip-path="url(#cf)"><rect x="90" y="50" width="240" height="200" fill="url(#cells)" opacity=".6"/>';
+  s+='<circle cx="206" cy="146" r="58" fill="#6e6556" stroke="#2f2a24" stroke-width="2"/>';
+  s+='<circle cx="206" cy="146" r="44" fill="none" stroke="#2f2a24" stroke-width="1.5" opacity=".7"/>';
+  s+='<circle cx="206" cy="146" r="22" fill="#2e2822"/>';
+  for(var a=0;a<9;a++){var an=a*Math.PI*2/9;s+='<circle cx="'+(206+Math.cos(an)*13).toFixed(1)+'" cy="'+(146+Math.sin(an)*13).toFixed(1)+'" r="3.6" fill="#c3b79e"/>';}
+  s+='<path d="M96 196 Q150 170 190 214 T300 238" stroke="#efeadc" stroke-width="2.2" fill="none" opacity=".85"/></g>';
+  s+='<ellipse cx="206" cy="146" rx="112" ry="92" fill="none" stroke="#2a2621" stroke-width="3"/>';
+  s+='</svg>';return s;
+}
+
+/* ---------- content ---------- */
+var TYPES=[
+  {id:'imp',name:'Отпечаток',hint:'Органики нет: на породе остался только рельеф формы.'},
+  {id:'comp',name:'Компрессия (углефикация)',hint:'Сплющенная тёмная плёнка углерода: это остаток самого растения.'},
+  {id:'cast',name:'Слепок (ядро)',hint:'Объёмная копия: осадок заполнил полость и затвердел.'},
+  {id:'perm',name:'Перминерализация',hint:'Минерал заполнил клетки и сохранил строение ткани и объём.'},
+  {id:'amb',name:'Инклюзия в янтаре',hint:'Растение запечатано внутри затвердевшей смолы.'}
+];
+var T={};TYPES.forEach(function(t){T[t.id]=t;});
+
+var ROUNDS=[
+  {code:'PB-01',svg:svgComp,answer:'comp',title:'Перо листа семенного папоротника на аргиллите, карбон',
+   clues:['На сером сланце лежит тёмная, слегка блестящая плёнка в форме листа.','Лист плоский: объём потерян, а плёнку можно подцепить иглой.','Плёнка состоит из углерода: это остатки самого листа, из которого ушли вода и летучие вещества.'],
+   explain:'Лист быстро занесло илом. Под давлением из ткани ушли вода и газы, а остался тонкий слой углерода. Органическое вещество листа сохранилось, поэтому это компрессия.',
+   not:{imp:'У отпечатка нет органического слоя: форма видна только как рельеф.',perm:'Минерал не заместил ткань, объёма и клеточного строения нет, лист плоский.'},
+   fact:'Такие плёнки обрабатывают кислотами и выделяют кутикулу. Рисунок её клеток помогает определить вид растения, даже если форма листа почти стёрта.',
+   query:'Neuropteris fossil leaf Carboniferous shale'},
+  {code:'PB-02',svg:svgImp,answer:'imp',title:'Лист широколиственного дерева на светлом мергеле',
+   clues:['Цвет листа совпадает с цветом породы: тёмной плёнки нет.','Жилки видны как тонкие желобки и валики, рисунок читается при боковом свете.','Есть парная плита: на ней тот же лист, но зеркально.'],
+   explain:'Лист лёг на мягкий ил и оставил в нём оттиск. Потом ткань полностью разложилась, а ил затвердел. Остался только рельеф, органического вещества в образце нет.',
+   not:{comp:'У компрессии на породе остаётся тёмная углеродная плёнка. Здесь её нет.',cast:'Слепок объёмный и возникает, когда заполняется полость. Здесь лист плоский.'},
+   fact:'Пару «отпечаток и противоотпечаток» палеонтологи называют part и counterpart. Если порода раскололась по листу, он оказывается на обеих половинах зеркально.',
+   query:'fossil leaf impression limestone veins'},
+  {code:'PB-03',svg:svgCast,answer:'cast',title:'Ствол древнего хвоща (каламит), песчаник, карбон',
+   clues:['Образец объёмный, как толстая каменная колбаса, а не плоская плитка.','Вдоль него идут частые продольные рёбра, а через равные промежутки находятся узлы-перетяжки.','Внутри и снаружи одна порода: ни плёнки, ни клеток, ни древесины.'],
+   explain:'Стебель каламита был полым внутри. После гибели растения полость заполнил песок или ил, а сама ткань разложилась. Затвердевшая «начинка» повторила внутреннюю поверхность стебля. Получился слепок, или ядро.',
+   not:{perm:'При перминерализации минерал заполняет клетки и сохраняет строение ткани. В ядре клеток нет, только порода.',imp:'Отпечаток плоский и передаёт внешнюю поверхность. Ядро объёмное и повторяет внутреннюю полость.'},
+   fact:'Каламиты вырастали примерно до 20 м и росли в болотах карбона, из которых позднее образовались угольные пласты.',
+   query:'Calamites pith cast fossil'},
+  {code:'PB-04',svg:svgPerm,answer:'perm',title:'Окаменелое дерево, спил',
+   clues:['Спил тяжёлый, как камень, и блестит, как полированный агат.','Видны годичные кольца и тонкие радиальные лучи, объём ствола сохранён.','На шлифе под микроскопом различимы отдельные клетки и сосуды, заполненные кремнезёмом.'],
+   explain:'Ствол быстро захоронили в пепле и осадке, а грунтовые воды, богатые растворённым кремнезёмом, пропитали древесину. Минерал осаждался в клетках и на месте стенок, поэтому строение ткани осталось видимым. Это перминерализация, или петрификация.',
+   not:{cast:'У слепка видна только форма заполненной полости, анатомии ткани нет.',comp:'Компрессия плоская и содержит углерод, а здесь сохранён весь объём и ткань пропитана камнем.'},
+   fact:'Стволы в национальном парке «Окаменелый лес» в Аризоне имеют возраст около 225 млн лет. Цвет им дают примеси оксидов железа и марганца.',
+   query:'petrified wood slice growth rings'},
+  {code:'PB-05',svg:svgAmb,answer:'amb',title:'Лист в куске ископаемой смолы',
+   clues:['Образец прозрачный, медового цвета, а внутри видна тёмная фигурка листа.','Он лёгкий, тёплый на ощупь и плавает в насыщенном соляном растворе.','Тончайшие детали, в том числе волоски, сохранены почти без искажений, объём не сплющен.'],
+   explain:'Лист упал в липкую смолу дерева. Смола затвердела и закрыла его от воздуха, воды и микробов, поэтому ткани почти не изменились. Это инклюзия: остаток растения запечатан внутри ископаемой смолы.',
+   not:{perm:'Перминерализация даёт камень, а здесь матрица органическая, прозрачная и лёгкая.',comp:'Компрессия плоская и тёмная, а в янтаре лист сохраняет объём.'},
+   fact:'Балтийский янтарь образовался примерно 40 млн лет назад. В нём находят не только листья и цветки, но и насекомых, пыльцу и споры.',
+   query:'amber with plant inclusion leaf'},
+  {code:'PB-06',svg:svgCoal,answer:'perm',star:true,title:'Угольный шар из угольного пласта, карбон',
+   clues:['Округлая тёмно-серая конкреция, найденная прямо в угольном пласте.','На полированном срезе виден поперечник стебля с центральным пучком сосудов.','Образец пузырится от капли кислоты: минерал здесь кальцит, а не кремнезём.'],
+   explain:'Торфяные остатки пропитал карбонатный раствор прямо в болоте. Кальцит заполнил клетки раньше, чем торф успел сильно сжаться, поэтому ткани остались объёмными. Минерал другой, механизм тот же: это перминерализация.',
+   not:{comp:'В угольном пласте остатки обычно сплющены в уголь, а здесь они объёмные и каменные.',cast:'Ядро показало бы только форму, а на срезе видна анатомия стебля.'},
+   fact:'Угольные шары дают самую полную картину анатомии растений карбона. В обычном угле от тканей остаётся лишь масса углерода.',
+   query:'coal ball fossil plant cross section calcite'}
+];
+
+/* ---------- state ---------- */
+var S={i:0,pace:25,clues:1,t0:0,phase:'idle',picks:[null,null],lockC:[0,0],lockT:[0,0],
+  teams:[{name:'Грибы-деструкторы',score:0},{name:'Торфяники',score:0}],hist:[],photos:{},timer:null,wait:null};
+
+function show(id){['s-intro','s-round','s-final'].forEach(function(x){$('#'+x).hidden=(x!==id);});$('#teacher').hidden=(id==='s-round');window.scrollTo(0,0);}
+function renderScores(){
+  for(var t=0;t<2;t++){$('#sn'+t).textContent=S.teams[t].name;$('#sv'+t).textContent=S.teams[t].score;$('#tn'+t).textContent=S.teams[t].name;}
+}
+function renderPips(){
+  var h='';for(var i=0;i<ROUNDS.length;i++){h+='<i class="'+(i<S.i?'done':(i===S.i&&S.phase!=='idle'?'now':''))+'"></i>';}
+  $('#pips').innerHTML=h;
+}
+function renderTypes(){
+  $('#types').innerHTML=TYPES.map(function(t){return '<div class="t"><b>'+esc(t.name)+'</b><span>'+esc(t.hint)+'</span></div>';}).join('');
+}
+function renderPlate(){
+  var R=ROUNDS[S.i],p=S.photos[S.i];
+  $('#plate').innerHTML=(p?'<img alt="Фото образца" src="'+p+'">':R.svg())+'<span class="tag">'+R.code+' · '+(S.i+1)+'/'+ROUNDS.length+(R.star?' · со звёздочкой':'')+'</span><span class="cap">'+(p?'фото образца':'схема образца')+'</span>';
+}
+var KEYS=[['1','2','3','4','5'],['Q','W','E','R','T']];
+function renderAnswers(){
+  for(var t=0;t<2;t++){
+    var box=$('#ans'+t),st=$('#ts'+t);
+    if(S.picks[t]!==null){
+      box.innerHTML='<div class="locked-msg" style="--tc:var(--'+(t?'b':'a')+')">Ответ принят · после признака '+S.lockC[t]+'</div>';
+      st.textContent='принят на '+S.lockT[t]+' с';
+    }else{
+      box.innerHTML='<div class="grid">'+TYPES.map(function(ty,k){return '<button type="button" class="ans" data-t="'+t+'" data-id="'+ty.id+'"><span class="k">'+KEYS[t][k]+'</span>'+esc(ty.name)+'</button>';}).join('')+'</div>';
+      st.textContent='думает';
+    }
+  }
+}
+function renderClues(fresh){
+  var R=ROUNDS[S.i];
+  $('#clues').innerHTML=R.clues.map(function(c,k){
+    var on=k<S.clues;
+    return '<div class="clue'+(on?'':' off')+(on&&fresh&&k===S.clues-1&&k>0?' new':'')+'"><span class="lab">Признак '+(k+1)+'</span><span class="txt">'+(on?esc(c):'Откроется позже')+'</span></div>';
+  }).join('');
+}
+
+/* ---------- flow ---------- */
+function startGame(){
+  S.teams[0].name=($('#in-a').value||'').trim()||'Команда 1';
+  S.teams[1].name=($('#in-b').value||'').trim()||'Команда 2';
+  S.teams[0].score=0;S.teams[1].score=0;S.hist=[];S.i=0;
+  S.pace=parseInt($('#in-pace').value,10)||25;
+  show('s-round');startRound();
+}
+function startRound(){
+  clearInterval(S.timer);clearTimeout(S.wait);
+  S.picks=[null,null];S.lockC=[0,0];S.lockT=[0,0];S.clues=1;S.phase='play';S.t0=performance.now();
+  $('#reveal').hidden=true;$('#teams').hidden=false;
+  renderScores();renderPips();renderPlate();renderClues(false);renderAnswers();
+  $('#tbar').style.width='100%';$('#tnum').textContent=S.pace;$('#worth').textContent='+3';
+  S.timer=setInterval(tick,200);
+}
+function tick(){
+  if(S.phase!=='play'&&S.phase!=='wait')return;
+  var el=(performance.now()-S.t0)/1000,left=Math.max(0,S.pace-el);
+  var c=el<S.pace/3?1:(el<S.pace*2/3?2:3);
+  if(c!==S.clues&&S.phase==='play'){S.clues=c;renderClues(true);}
+  $('#tbar').style.width=(left/S.pace*100)+'%';
+  $('#tnum').textContent=Math.ceil(left);
+  $('#worth').textContent='+'+(4-S.clues);
+  if(left<=0)reveal();
+}
+function lock(t,id){
+  if(S.phase!=='play'||S.picks[t]!==null)return;
+  S.picks[t]=id;S.lockC[t]=S.clues;S.lockT[t]=Math.round((performance.now()-S.t0)/1000);
+  renderAnswers();
+  if(S.picks[0]!==null&&S.picks[1]!==null){S.phase='wait';S.wait=setTimeout(reveal,700);}
+}
+function reveal(){
+  if(S.phase==='reveal')return;
+  S.phase='reveal';clearInterval(S.timer);clearTimeout(S.wait);
+  var R=ROUNDS[S.i],pts=[0,0];
+  for(var t=0;t<2;t++){
+    if(S.picks[t]===null)pts[t]=0;
+    else pts[t]=(S.picks[t]===R.answer)?(4-S.lockC[t]):-1;
+    S.teams[t].score+=pts[t];
+  }
+  S.hist.push({picks:S.picks.slice(),pts:pts});
+  renderScores();renderPips();
+  $('#teams').hidden=true;
+  $('#rv-type').textContent=T[R.answer].name;
+  $('#rv-title').textContent=R.title;
+  $('#rv-teams').innerHTML=[0,1].map(function(t){
+    var p=S.picks[t],res,cls;
+    if(p===null){res='0';cls='';}else if(p===R.answer){res='+'+pts[t];cls='ok';}else{res='−1';cls='no';}
+    return '<div class="rv-t" style="--tc:var(--'+(t?'b':'a')+')"><span class="who">'+esc(S.teams[t].name)+'</span><span class="pick">'+(p===null?'не ответили':esc(T[p].name))+'</span><span class="res '+cls+'">'+res+'</span></div>';
+  }).join('');
+  $('#rv-explain').textContent=R.explain;
+  $('#rv-not').innerHTML=Object.keys(R.not).map(function(k){return '<li><b>'+esc(T[k].name)+'.</b> '+esc(R.not[k])+'</li>';}).join('');
+  $('#rv-fact').textContent=R.fact;
+  $('#btn-next').textContent=(S.i===ROUNDS.length-1)?'Показать итоги':'Следующий образец';
+  $('#reveal').hidden=false;
+  $('#clues').innerHTML=R.clues.map(function(c,k){return '<div class="clue"><span class="lab">Признак '+(k+1)+'</span><span class="txt">'+esc(c)+'</span></div>';}).join('');
+  $('#worth').textContent='—';
+  $('#tnum').textContent='0';
+}
+function next(){
+  if(S.phase!=='reveal')return;
+  S.i++;
+  if(S.i>=ROUNDS.length){finish();}else{startRound();}
+}
+function finish(){
+  S.phase='idle';renderScores();
+  var a=S.teams[0],b=S.teams[1],max=ROUNDS.length*3;
+  var title;
+  if(a.score===b.score)title='Ничья: '+a.score+' : '+b.score;
+  else{var w=a.score>b.score?a:b;title='Победила команда «'+w.name+'»: '+a.score+' : '+b.score;}
+  $('#f-title').textContent=title;
+  $('#f-bars').innerHTML=S.teams.map(function(tm,t){
+    var pct=Math.max(0,Math.min(100,tm.score/max*100));
+    return '<div class="bar-row" style="--tc:var(--'+(t?'b':'a')+')"><span class="n">'+esc(tm.name)+'</span><span class="track"><i style="width:'+pct.toFixed(1)+'%"></i></span><span class="v">'+tm.score+'</span></div>';
+  }).join('');
+  var head='<tr><th>№</th><th>Образец</th><th>Верный тип</th><th>'+esc(a.name)+'</th><th>'+esc(b.name)+'</th></tr>';
+  var rows=ROUNDS.map(function(R,i){
+    var h=S.hist[i]||{picks:[null,null],pts:[0,0]};
+    function cell(t){
+      var p=h.picks[t];
+      if(p===null)return '<span class="muted">не ответили</span> <span class="p">0</span>';
+      var ok=(p===R.answer);
+      return esc(T[p].name)+' <span class="p '+(ok?'ok':'no')+'">'+(ok?'+'+h.pts[t]:'−1')+'</span>';
+    }
+    return '<tr><td class="num">'+R.code+'</td><td>'+esc(R.title)+'</td><td>'+esc(T[R.answer].name)+'</td><td>'+cell(0)+'</td><td>'+cell(1)+'</td></tr>';
+  }).join('');
+  $('#f-table').innerHTML='<thead>'+head+'</thead><tbody>'+rows+'</tbody>';
+  renderPips();
+  show('s-final');
+}
+
+/* ---------- teacher: photos ---------- */
+function renderPhotos(){
+  $('#photos').innerHTML=ROUNDS.map(function(R,i){
+    var p=S.photos[i];
+    return '<div class="ph"><div><b>'+R.code+'</b> · '+esc(T[R.answer].name)+'<br><code>'+esc(R.query)+'</code></div>'+
+      '<div class="acts">'+(p?'<img alt="" src="'+p+'">':'')+
+      '<label class="btn ghost small" for="ph'+i+'">'+(p?'Заменить':'Загрузить фото')+'</label><input type="file" id="ph'+i+'" accept="image/*" data-r="'+i+'">'+
+      (p?'<button type="button" class="btn ghost small" data-clear="'+i+'">Убрать</button>':'')+'</div></div>';
+  }).join('');
+}
+$('#photos').addEventListener('change',function(e){
+  var inp=e.target;if(!inp||inp.type!=='file'||!inp.files||!inp.files[0])return;
+  var r=parseInt(inp.getAttribute('data-r'),10),fr=new FileReader();
+  fr.onload=function(){S.photos[r]=fr.result;renderPhotos();};
+  fr.readAsDataURL(inp.files[0]);
+});
+$('#photos').addEventListener('click',function(e){
+  var b=e.target.closest?e.target.closest('[data-clear]'):null;if(!b)return;
+  delete S.photos[parseInt(b.getAttribute('data-clear'),10)];renderPhotos();
+});
+
+/* ---------- events ---------- */
+$('#setup').addEventListener('submit',function(e){e.preventDefault();startGame();});
+$('#teams').addEventListener('click',function(e){
+  var b=e.target.closest?e.target.closest('.ans'):null;if(!b)return;
+  lock(parseInt(b.getAttribute('data-t'),10),b.getAttribute('data-id'));
+});
+$('#btn-next').addEventListener('click',next);
+$('#btn-again').addEventListener('click',function(){
+  S.teams[0].score=0;S.teams[1].score=0;S.hist=[];S.i=0;show('s-round');startRound();
+});
+$('#btn-home').addEventListener('click',function(){
+  S.teams[0].score=0;S.teams[1].score=0;S.i=0;S.phase='idle';renderScores();renderPips();show('s-intro');
+});
+var CODES={t0:['Digit1','Digit2','Digit3','Digit4','Digit5'],t1:['KeyQ','KeyW','KeyE','KeyR','KeyT']};
+document.addEventListener('keydown',function(e){
+  var tag=(e.target&&e.target.tagName)||'';
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;
+  if($('#s-round').hidden)return;
+  if(S.phase==='reveal'&&(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight')){e.preventDefault();next();return;}
+  if(S.phase!=='play')return;
+  var k0=CODES.t0.indexOf(e.code),k1=CODES.t1.indexOf(e.code);
+  if(k0>-1)lock(0,TYPES[k0].id);
+  else if(k1>-1)lock(1,TYPES[k1].id);
+});
+
+/* ---------- init ---------- */
+renderTypes();renderPhotos();renderPips();
+S.teams[0].name=$('#in-a').value;S.teams[1].name=$('#in-b').value;renderScores();
+show('s-intro');
+})();
+</script>
+
+</body></html>
